@@ -68,7 +68,7 @@ export const useEventState = () => {
         ...globalState,
         ...eventState,
         teams: teams || [],
-        categories: categories || [],
+        categories: categories ? categories.map(c => c.name) : [],
         students: students || [],
         latestSelections: latestSelections || [],
         isLoaded: true

@@ -53,10 +53,10 @@ async function seed() {
         students.push({
           id: row.id || Math.random().toString(36).substr(2, 9),
           name: row.name || row.Name,
-          chestNo: row.chestNo || row.ChestNo || row.chestno,
+          chestNo: row.adno || row.chestNo || row.ChestNo || row.chestno,
           category: row.category || row.Category,
           class: row.class || row.Class,
-          photo: row.photo || row.Photo || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
+          photo: row.photo_url || row.photo || row.Photo || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
           status: 'available',
           selectedBy: null
         });
