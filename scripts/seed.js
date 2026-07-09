@@ -45,16 +45,22 @@ async function seed() {
 
   console.log("Reading CSV:", CSV_PATH);
   const students = [];
+  const uniqueCategories = new Set();
   
   if (fs.existsSync(CSV_PATH)) {
     fs.createReadStream(CSV_PATH)
       .pipe(csv())
       .on('data', (row) => {
+        const catName = row.category || row.Category;
+        if (catName) {
+          uniqueCategories.add(catName);
+        }
+        
         students.push({
           id: row.id || Math.random().toString(36).substr(2, 9),
           name: row.name || row.Name,
           chestNo: row.adno || row.chestNo || row.ChestNo || row.chestno,
-          category: row.category || row.Category,
+          category: catName,
           class: row.class || row.Class,
           photo: row.photo_url || row.photo || row.Photo || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
           status: 'available',
@@ -62,6 +68,23 @@ async function seed() {
         });
       })
       .on('end', async () => {
+        console.log(`Found categories in CSV:`, Array.from(uniqueCategories));
+        
+        // Upsert all found categories with some default styling
+        const catPayload = Array.from(uniqueCategories).map((name, i) => {
+          const colors = ['text-event-gold', 'text-blue-400', 'text-green-400', 'text-purple-400', 'text-red-400', 'text-white'];
+          const color = colors[i % colors.length];
+          return {
+            name,
+            color,
+            bg: color.replace('text-', 'bg-').split('-')[0] + '/10',
+            border: color.replace('text-', 'border-').split('-')[0] + '/20'
+          };
+        });
+        
+        const { error: catError } = await supabase.from('categories').upsert(catPayload);
+        if (catError) console.error("Dynamic Categories Error:", catError);
+
         console.log(`Parsed ${students.length} students. Uploading to Supabase...`);
         // Batch upload
         for (let i = 0; i < students.length; i += 100) {

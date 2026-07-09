@@ -1,5 +1,5 @@
 -- Recreate Categories Table
-CREATE TABLE categories (
+CREATE TABLE IF NOT EXISTS categories (
   name TEXT PRIMARY KEY,
   color TEXT NOT NULL,
   bg TEXT NOT NULL,
@@ -7,8 +7,17 @@ CREATE TABLE categories (
   count INTEGER DEFAULT 0
 );
 
+-- Insert dummy categories to satisfy existing event_state rows before constraint is added
+INSERT INTO categories (name, color, bg, border) VALUES 
+  ('Ula', 'text-white', 'bg-white/10', 'border-white/20'),
+  ('BIDAYA', 'text-blue-400', 'bg-blue-400/10', 'border-blue-400/20'),
+  ('THANIYA', 'text-green-400', 'bg-green-400/10', 'border-green-400/20'),
+  ('ALIYA', 'text-purple-400', 'bg-purple-400/10', 'border-purple-400/20'),
+  ('Senior', 'text-event-gold', 'bg-event-gold/10', 'border-event-gold/20')
+ON CONFLICT DO NOTHING;
+
 -- Recreate Students Table
-CREATE TABLE students (
+CREATE TABLE IF NOT EXISTS students (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
   "chestNo" TEXT NOT NULL,
