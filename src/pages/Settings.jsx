@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import { Settings2, AlertTriangle, RotateCcw, Volume2 } from 'lucide-react';
 import { useEventState } from '../lib/store';
 import { audioManager } from '../lib/audio';
 
 export default function Settings() {
   const { state, updateState } = useEventState();
+  const [resetConfirmText, setResetConfirmText] = useState('');
 
   const handleVolumeChange = (key, value) => {
     updateState({ [key]: parseInt(value, 10) });
@@ -140,13 +142,25 @@ export default function Settings() {
 
             <div className="flex items-center justify-between p-6 bg-[#0a0a0a] rounded-2xl border border-red-500/30 mt-4 relative overflow-hidden group hover:border-red-500/50 transition-all">
               <div className="absolute inset-0 bg-red-500/5 pattern-diagonal-lines opacity-20 pointer-events-none group-hover:opacity-40 transition-opacity"></div>
-              <div className="relative z-10">
+              <div className="relative z-10 flex-1">
                 <div className="font-bold text-red-500 uppercase tracking-widest text-sm mb-1">Factory Reset Event</div>
                 <div className="text-xs font-bold text-red-400/50 uppercase tracking-wider">Delete all data, teams, students, and categories</div>
               </div>
-              <button className="relative z-10 px-8 py-3 bg-red-600/20 text-red-500 hover:bg-red-600 hover:text-white transition-all rounded-full text-xs font-bold uppercase tracking-widest border border-red-500/50 hover:shadow-[0_0_30px_rgba(220,38,38,0.5)] whitespace-nowrap">
-                DELETE EVERYTHING
-              </button>
+              <div className="relative z-10 flex items-center gap-3">
+                <input 
+                  type="text" 
+                  placeholder="Type DELETE" 
+                  value={resetConfirmText}
+                  onChange={(e) => setResetConfirmText(e.target.value)}
+                  className="bg-[#121212] border border-red-500/30 rounded-xl px-4 py-2.5 text-xs text-white font-bold uppercase tracking-widest focus:outline-none focus:border-red-500 transition-all w-36 placeholder:text-red-500/30"
+                />
+                <button 
+                  disabled={resetConfirmText !== 'DELETE'}
+                  className="px-8 py-3 bg-red-600/20 text-red-500 hover:bg-red-600 hover:text-white transition-all rounded-full text-xs font-bold uppercase tracking-widest border border-red-500/50 hover:shadow-[0_0_30px_rgba(220,38,38,0.5)] whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-red-600/20 disabled:hover:text-red-500 disabled:hover:shadow-none"
+                >
+                  DELETE EVERYTHING
+                </button>
+              </div>
             </div>
           </div>
         </section>
