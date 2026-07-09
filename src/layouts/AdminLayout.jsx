@@ -15,6 +15,63 @@ const navItems = [
 
 export default function AdminLayout() {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    return sessionStorage.getItem('adminAuth') === 'true';
+  });
+  const [passcode, setPasscode] = useState('');
+  const [error, setError] = useState(false);
+
+  const handlePasscodeSubmit = (e) => {
+    e.preventDefault();
+    if (passcode === '123654') {
+      sessionStorage.setItem('adminAuth', 'true');
+      setIsAuthenticated(true);
+      setError(false);
+    } else {
+      setError(true);
+      setPasscode('');
+    }
+  };
+
+  if (!isAuthenticated) {
+    return (
+      <div className="h-screen w-screen bg-[#0a0a0a] flex items-center justify-center font-sans relative overflow-hidden">
+        <div className="absolute top-0 left-1/4 w-1/2 h-96 bg-event-gold/5 blur-[120px] pointer-events-none rounded-full"></div>
+        
+        <div className="glass-panel p-10 rounded-[32px] border border-white/5 flex flex-col items-center relative z-10 w-full max-w-sm">
+          <div className="w-16 h-16 rounded-2xl bg-event-gold text-charcoal font-bold flex items-center justify-center text-4xl mb-6 shadow-[0_0_30px_rgba(255,215,0,0.3)]">B</div>
+          <h1 className="text-xl font-bold text-white mb-2 tracking-widest uppercase text-center">Admin Access</h1>
+          <p className="text-white/40 text-xs font-bold uppercase tracking-widest text-center mb-8">Enter authorization code</p>
+          
+          <form onSubmit={handlePasscodeSubmit} className="w-full flex flex-col gap-4">
+            <div className="relative">
+              <input
+                type="password"
+                value={passcode}
+                onChange={(e) => setPasscode(e.target.value)}
+                maxLength={6}
+                placeholder="••••••"
+                className={clsx(
+                  "w-full bg-[#121212] border rounded-xl px-4 py-4 text-center text-2xl text-white font-mono tracking-[0.5em] focus:outline-none transition-all placeholder:text-white/10",
+                  error ? "border-red-500/50 shadow-[0_0_15px_rgba(239,68,68,0.2)] text-red-500" : "border-white/10 focus:border-event-gold focus:shadow-[0_0_15px_rgba(255,215,0,0.2)]"
+                )}
+                autoFocus
+              />
+              {error && <div className="absolute -bottom-6 left-0 right-0 text-center text-[10px] font-bold text-red-500 uppercase tracking-widest">Invalid Passcode</div>}
+            </div>
+            
+            <button
+              type="submit"
+              disabled={passcode.length < 6}
+              className="mt-6 w-full py-4 bg-event-gold/10 text-event-gold hover:bg-event-gold hover:text-charcoal transition-all rounded-xl text-xs font-bold uppercase tracking-widest border border-event-gold/20 hover:shadow-[0_0_20px_rgba(255,215,0,0.4)] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-event-gold/10 disabled:hover:text-event-gold disabled:hover:shadow-none"
+            >
+              Authenticate
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-screen w-screen flex bg-[#0a0a0a] text-white overflow-hidden font-sans">
