@@ -1,4 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { useEventState } from './lib/store';
+import { Loader2 } from 'lucide-react';
 import AdminLayout from './layouts/AdminLayout';
 import AdminDashboard from './pages/Admin';
 import Dashboard from './pages/Dashboard';
@@ -11,6 +13,17 @@ import TeamLeaderPortal from './pages/TeamLeader';
 import MainStageDisplay from './pages/MainStage';
 
 function App() {
+  const { state } = useEventState();
+
+  if (!state.isLoaded) {
+    return (
+      <div className="h-[100dvh] bg-[#0a0a0a] flex items-center justify-center flex-col text-white">
+        <Loader2 className="w-12 h-12 animate-spin text-event-gold mb-4" />
+        <div className="text-sm uppercase tracking-widest font-bold text-white/50">Connecting to Live Server...</div>
+      </div>
+    );
+  }
+
   return (
     <BrowserRouter>
       <Routes>

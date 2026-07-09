@@ -1,48 +1,28 @@
 import { useState, useEffect, useCallback } from 'react';
-import studentData from '../data/students.json';
-
-// Using BroadcastChannel for local cross-tab real-time sync
-const channel = new BroadcastChannel('busthan-event-state');
+import { supabase } from './supabase';
 
 const INITIAL_STATE = {
   currentCategory: 'Senior',
   currentTeam: null,
   accessEnabled: false,
-  timerTimeRemaining: 24, // in seconds
+  timerTimeRemaining: 24,
   timerIsRunning: false,
-  students: studentData.students,
-  teams: [
-    { id: 'team-a', name: 'TEAM A', color: 'bg-team-a', text: 'text-team-a', loginCode: 'ax7b9q' },
-    { id: 'team-b', name: 'TEAM B', color: 'bg-team-b', text: 'text-team-b', loginCode: 'm4r2p1' },
-    { id: 'team-c', name: 'TEAM C', color: 'bg-team-c', text: 'text-team-c', loginCode: 'z8v5k3' },
-  ],
-  categories: studentData.categories,
+  students: [],
+  teams: [],
+  categories: [],
   latestSelections: [],
   audioMasterVolume: 80,
   audioEffectsVolume: 100,
   audioCountdownVolume: 60,
   audioCelebrationVolume: 100,
-  audioMuted: false
+  audioMuted: false,
+  isLoaded: false
 };
 
 let globalState = { ...INITIAL_STATE };
 const listeners = new Set();
 
-const broadcast = (newState) => {
-  globalState = { ...newState };
-  
-  // Sync Audio Settings
-  import('./audio.js').then(({ audioManager }) => {
-    audioManager.updateSettings(globalState);
-  }).catch(() => {});
-
-  listeners.forEach(l => l(globalState));
-  channel.postMessage(globalState);
-};
-
-channel.onmessage = (event) => {
-  globalState = { ...event.data };
-  
+const notifyListeners = () => {
   // Sync Audio Settings
   import('./audio.js').then(({ audioManager }) => {
     audioManager.updateSettings(globalState);
@@ -50,23 +30,125 @@ channel.onmessage = (event) => {
 
   listeners.forEach(l => l(globalState));
 };
+
+let initialized = false;
 
 export const useEventState = () => {
   const [state, setState] = useState(globalState);
 
   useEffect(() => {
     listeners.add(setState);
+
+    if (!initialized) {
+      initialized = true;
+      loadInitialData();
+      setupSubscriptions();
+    }
+
     return () => listeners.delete(setState);
   }, []);
 
-  const updateState = useCallback((updates) => {
-    broadcast({ ...globalState, ...updates });
+  const loadInitialData = async () => {
+    try {
+      const [
+        { data: eventState },
+        { data: teams },
+        { data: categories },
+        { data: students },
+        { data: latestSelections }
+      ] = await Promise.all([
+        supabase.from('event_state').select('*').eq('id', 1).single(),
+        supabase.from('teams').select('*'),
+        supabase.from('categories').select('*'),
+        supabase.from('students').select('*'),
+        supabase.from('latest_selections').select('*').order('time', { ascending: false }).limit(5)
+      ]);
+
+      globalState = {
+        ...globalState,
+        ...eventState,
+        teams: teams || [],
+        categories: categories || [],
+        students: students || [],
+        latestSelections: latestSelections || [],
+        isLoaded: true
+      };
+      notifyListeners();
+    } catch (err) {
+      console.error("Error loading data from Supabase:", err);
+    }
+  };
+
+  const setupSubscriptions = () => {
+    supabase.channel('public:event_state')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'event_state' }, payload => {
+        globalState = { ...globalState, ...payload.new };
+        notifyListeners();
+      })
+      .subscribe();
+
+    supabase.channel('public:students')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'students' }, async () => {
+        // Simple way: refetch all students, or we can patch the specific student
+        const { data } = await supabase.from('students').select('*');
+        if (data) {
+          globalState = { ...globalState, students: data };
+          notifyListeners();
+        }
+      })
+      .subscribe();
+
+    supabase.channel('public:latest_selections')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'latest_selections' }, async () => {
+        const { data } = await supabase.from('latest_selections').select('*').order('time', { ascending: false }).limit(5);
+        if (data) {
+          globalState = { ...globalState, latestSelections: data };
+          notifyListeners();
+        }
+      })
+      .subscribe();
+      
+    supabase.channel('public:teams')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'teams' }, async () => {
+        const { data } = await supabase.from('teams').select('*');
+        if (data) {
+          globalState = { ...globalState, teams: data };
+          notifyListeners();
+        }
+      })
+      .subscribe();
+  };
+
+  const updateState = useCallback(async (updates) => {
+    // Optimistic update locally
+    globalState = { ...globalState, ...updates };
+    notifyListeners();
+
+    // Find which keys belong to event_state vs others
+    // For now we assume all `updates` are event_state fields unless explicitly handled
+    const eventStateFields = [
+      'currentCategory', 'currentTeam', 'accessEnabled', 'timerTimeRemaining',
+      'timerIsRunning', 'audioMasterVolume', 'audioEffectsVolume',
+      'audioCountdownVolume', 'audioCelebrationVolume', 'audioMuted'
+    ];
+
+    const eventUpdates = {};
+    Object.keys(updates).forEach(key => {
+      if (eventStateFields.includes(key)) {
+        eventUpdates[key] = updates[key];
+      }
+    });
+
+    if (Object.keys(eventUpdates).length > 0) {
+      await supabase.from('event_state').update(eventUpdates).eq('id', 1);
+    }
   }, []);
 
-  const selectStudent = useCallback((studentId, teamId) => {
+  const selectStudent = useCallback(async (studentId, teamId) => {
     const student = globalState.students.find(s => s.id === studentId);
     if (!student) return;
 
+    // Optimistic update
     const updatedStudents = globalState.students.map(s => 
       s.id === studentId ? { ...s, status: 'selected', selectedBy: teamId } : s
     );
@@ -78,39 +160,61 @@ export const useEventState = () => {
       time: new Date().toISOString()
     };
 
-    broadcast({
+    globalState = {
       ...globalState,
       students: updatedStudents,
       latestSelections: [newSelection, ...globalState.latestSelections].slice(0, 5),
-      currentTeam: null, // Clear active team after selection
-      accessEnabled: false, // Lock access
-      timerIsRunning: false // Stop timer on selection
-    });
+      currentTeam: null,
+      accessEnabled: false,
+      timerIsRunning: false
+    };
+    notifyListeners();
+
+    // Update Supabase
+    await Promise.all([
+      supabase.from('students').update({ status: 'selected', selectedBy: teamId }).eq('id', studentId),
+      supabase.from('latest_selections').insert([newSelection]),
+      supabase.from('event_state').update({
+        currentTeam: null,
+        accessEnabled: false,
+        timerIsRunning: false
+      }).eq('id', 1)
+    ]);
   }, []);
 
-  const decrementTimer = useCallback(() => {
+  const decrementTimer = useCallback(async () => {
     if (globalState.timerIsRunning && globalState.timerTimeRemaining > 0) {
-      broadcast({
-        ...globalState,
-        timerTimeRemaining: globalState.timerTimeRemaining - 1
-      });
+      const newTime = globalState.timerTimeRemaining - 1;
+      
+      // Optimistic
+      globalState = { ...globalState, timerTimeRemaining: newTime };
+      notifyListeners();
+
+      await supabase.from('event_state').update({ timerTimeRemaining: newTime }).eq('id', 1);
     }
   }, []);
 
-  const toggleTimer = useCallback(() => {
-    broadcast({
-      ...globalState,
-      timerIsRunning: !globalState.timerIsRunning
-    });
+  const toggleTimer = useCallback(async () => {
+    const newState = !globalState.timerIsRunning;
+    
+    // Optimistic
+    globalState = { ...globalState, timerIsRunning: newState };
+    notifyListeners();
+
+    await supabase.from('event_state').update({ timerIsRunning: newState }).eq('id', 1);
   }, []);
 
-  const regenerateLoginCode = useCallback((teamId) => {
+  const regenerateLoginCode = useCallback(async (teamId) => {
+    const newCode = Math.random().toString(36).substring(2, 8);
+    
+    // Optimistic
     const updatedTeams = globalState.teams.map(t => 
-      t.id === teamId 
-        ? { ...t, loginCode: Math.random().toString(36).substring(2, 8) } 
-        : t
+      t.id === teamId ? { ...t, loginCode: newCode } : t
     );
-    broadcast({ ...globalState, teams: updatedTeams });
+    globalState = { ...globalState, teams: updatedTeams };
+    notifyListeners();
+
+    await supabase.from('teams').update({ loginCode: newCode }).eq('id', teamId);
   }, []);
 
   return { state, updateState, selectStudent, decrementTimer, toggleTimer, regenerateLoginCode };

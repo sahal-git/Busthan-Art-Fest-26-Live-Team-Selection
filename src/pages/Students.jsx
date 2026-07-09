@@ -15,15 +15,6 @@ export default function Students() {
     return matchesSearch && matchesCategory;
   });
 
-  const handleReset = (studentId) => {
-    if (confirm('Are you sure you want to reset this assignment?')) {
-      audioManager.play('undo-selection', 'effects');
-      const updatedStudents = state.students.map(s => 
-        s.id === studentId ? { ...s, status: 'available', selectedBy: null, team: null } : s
-      );
-      updateState({ students: updatedStudents });
-    }
-  };
 
   return (
     <div className="h-full bg-[#0a0a0a] text-white flex flex-col p-8 overflow-hidden font-sans relative">
@@ -47,9 +38,6 @@ export default function Students() {
           </button>
           <button className="flex items-center gap-2 px-5 py-2.5 bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-all rounded-full text-xs font-bold uppercase tracking-widest border border-red-500/20 hover:border-red-500/40 hover:shadow-[0_0_15px_rgba(239,68,68,0.2)]">
             <Trash2 className="w-4 h-4" /> Bulk Delete
-          </button>
-          <button className="flex items-center gap-2 px-5 py-2.5 bg-event-gold/10 text-event-gold hover:bg-event-gold/20 transition-all rounded-full text-xs font-bold uppercase tracking-widest border border-event-gold/20 hover:border-event-gold/40 hover:shadow-[0_0_15px_rgba(255,215,0,0.2)]">
-            <RotateCcw className="w-4 h-4" /> Reset Assignment
           </button>
         </div>
       </header>
