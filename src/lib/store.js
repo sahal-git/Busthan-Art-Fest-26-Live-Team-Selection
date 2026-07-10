@@ -217,5 +217,27 @@ export const useEventState = () => {
     await supabase.from('teams').update({ loginCode: newCode }).eq('id', teamId);
   }, []);
 
-  return { state, updateState, selectStudent, decrementTimer, toggleTimer, regenerateLoginCode };
+  const updateStudent = useCallback(async (studentId, updates) => {
+    // Optimistic update
+    const updatedStudents = globalState.students.map(s => 
+      s.id === studentId ? { ...s, ...updates } : s
+    );
+    globalState = { ...globalState, students: updatedStudents };
+    notifyListeners();
+    
+    // Update Supabase
+    await supabase.from('students').update(updates).eq('id', studentId);
+  }, []);
+
+  const deleteStudent = useCallback(async (studentId) => {
+    // Optimistic update
+    const updatedStudents = globalState.students.filter(s => s.id !== studentId);
+    globalState = { ...globalState, students: updatedStudents };
+    notifyListeners();
+    
+    // Delete from Supabase
+    await supabase.from('students').delete().eq('id', studentId);
+  }, []);
+
+  return { state, updateState, selectStudent, decrementTimer, toggleTimer, regenerateLoginCode, updateStudent, deleteStudent };
 };

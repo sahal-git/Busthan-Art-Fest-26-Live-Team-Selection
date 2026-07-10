@@ -1,13 +1,15 @@
 import { useState } from 'react';
 import { useEventState } from '../lib/store';
-import { Search, Upload, Download, Trash2, RotateCcw, Users, Lock } from 'lucide-react';
+import { Search, Upload, Download, Trash2, Edit2, X, RotateCcw, Users, Lock, MoreHorizontal } from 'lucide-react';
+import { audioManager } from '../lib/audio';
 import { audioManager } from '../lib/audio';
 import clsx from 'clsx';
 
 export default function Students() {
-  const { state, updateState } = useEventState();
+  const { state, updateState, updateStudent, deleteStudent } = useEventState();
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('All');
+  const [editingStudent, setEditingStudent] = useState(null);
 
   const filteredStudents = state.students.filter(s => {
     const matchesSearch = s.name.toLowerCase().includes(search.toLowerCase()) || s.chestNo.includes(search);
@@ -81,6 +83,7 @@ export default function Students() {
                 <th className="px-6 py-4 text-xs font-bold text-white/40 uppercase tracking-widest">Class</th>
                 <th className="px-6 py-4 text-xs font-bold text-white/40 uppercase tracking-widest">Team</th>
                 <th className="px-6 py-4 text-xs font-bold text-white/40 uppercase tracking-widest">Status</th>
+                <th className="px-6 py-4 text-xs font-bold text-white/40 uppercase tracking-widest text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5 overflow-y-auto">
@@ -120,6 +123,16 @@ export default function Students() {
                           </span>
                         )}
                       </td>
+                      <td className="px-6 py-3 text-right">
+                        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button onClick={() => setEditingStudent({ ...student })} className="p-2 hover:bg-blue-500/20 hover:text-blue-400 text-white/40 transition-all rounded-lg" title="Edit">
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button onClick={() => { if(confirm('Are you sure you want to delete this student?')) deleteStudent(student.id); }} className="p-2 hover:bg-red-500/20 hover:text-red-400 text-white/40 transition-all rounded-lg" title="Delete">
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   )
                 })
@@ -131,6 +144,76 @@ export default function Students() {
           Showing <span className="text-white">{filteredStudents.length}</span> of <span className="text-white">{state.students.length}</span> students
         </div>
       </div>
+
+      {/* Edit Modal */}
+      {editingStudent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="glass-panel w-full max-w-md p-8 rounded-3xl border border-white/10 shadow-2xl relative">
+            <button onClick={() => setEditingStudent(null)} className="absolute top-6 right-6 text-white/40 hover:text-white transition-colors">
+              <X className="w-5 h-5" />
+            </button>
+            <h2 className="text-xl font-bold text-white tracking-widest uppercase mb-6 flex items-center gap-3">
+              <Edit2 className="w-5 h-5 text-event-gold" /> Edit Student
+            </h2>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-widest text-white/40 mb-2">Name</label>
+                <input 
+                  type="text" 
+                  value={editingStudent.name} 
+                  onChange={e => setEditingStudent({...editingStudent, name: e.target.value})}
+                  className="w-full bg-[#121212] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-event-gold transition-all"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-widest text-white/40 mb-2">Chest No</label>
+                <input 
+                  type="text" 
+                  value={editingStudent.chestNo} 
+                  onChange={e => setEditingStudent({...editingStudent, chestNo: e.target.value})}
+                  className="w-full bg-[#121212] border border-white/10 rounded-xl px-4 py-3 text-sm font-mono text-event-gold focus:outline-none focus:border-event-gold transition-all"
+                />
+              </div>
+              <div className="flex gap-4">
+                <div className="flex-1">
+                  <label className="block text-[10px] font-bold uppercase tracking-widest text-white/40 mb-2">Category</label>
+                  <select 
+                    value={editingStudent.category} 
+                    onChange={e => setEditingStudent({...editingStudent, category: e.target.value})}
+                    className="w-full bg-[#121212] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-event-gold transition-all appearance-none"
+                  >
+                    {state.categories.map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex-1">
+                  <label className="block text-[10px] font-bold uppercase tracking-widest text-white/40 mb-2">Class</label>
+                  <input 
+                    type="text" 
+                    value={editingStudent.class} 
+                    onChange={e => setEditingStudent({...editingStudent, class: e.target.value})}
+                    className="w-full bg-[#121212] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-event-gold transition-all"
+                  />
+                </div>
+              </div>
+              <div className="pt-4 flex justify-end gap-3">
+                <button onClick={() => setEditingStudent(null)} className="px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest text-white/60 hover:text-white hover:bg-white/5 transition-all">Cancel</button>
+                <button onClick={() => {
+                  updateStudent(editingStudent.id, { 
+                    name: editingStudent.name, 
+                    chestNo: editingStudent.chestNo, 
+                    category: editingStudent.category, 
+                    class: editingStudent.class 
+                  });
+                  setEditingStudent(null);
+                }} className="px-5 py-2.5 bg-event-gold text-charcoal hover:bg-white transition-all rounded-xl text-xs font-bold uppercase tracking-widest shadow-[0_0_15px_rgba(255,215,0,0.3)]">Save Changes</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
