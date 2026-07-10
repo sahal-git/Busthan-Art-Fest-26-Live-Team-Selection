@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useEventState } from '../lib/store';
 import { Search, Upload, Download, Trash2, Edit2, X, RotateCcw, Users, Lock, MoreHorizontal } from 'lucide-react';
 import { audioManager } from '../lib/audio';
-import { audioManager } from '../lib/audio';
 import clsx from 'clsx';
 
 export default function Students() {
