@@ -86,7 +86,7 @@ export default function TeamLeaderPortal() {
   const isActive = state.currentTeam === teamId && state.accessEnabled;
 
   // Filter students: show all in category, prioritize exact match
-  const categoryStudents = state.students.filter(s => s.category === state.currentCategory);
+  const categoryStudents = state.students.filter(s => s.category === state.currentCategory && s.status === 'available');
   
   const filteredStudents = categoryStudents.filter(s => 
     s.name.toLowerCase().includes(search.toLowerCase()) || s.chestNo.includes(search)

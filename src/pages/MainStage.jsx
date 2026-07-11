@@ -292,7 +292,7 @@ export default function MainStageDisplay() {
                 Selected
               </div>
               
-              <h1 className="text-[6rem] font-black mb-2 tracking-wide leading-none animate-in slide-in-from-bottom-10 duration-700 delay-[500ms] fill-mode-both text-shadow-glow-intense">
+              <h1 className="text-[6rem] font-black mb-2 tracking-wide leading-none animate-in slide-in-from-bottom-10 duration-700 delay-[500ms] fill-mode-both text-shadow-glow">
                 {animatingStudent.name}
               </h1>
               
