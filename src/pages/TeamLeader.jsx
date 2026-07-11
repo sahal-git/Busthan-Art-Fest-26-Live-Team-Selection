@@ -19,6 +19,49 @@ export default function TeamLeaderPortal() {
   const team = state.teams.find(t => t.id === teamId);
   const code = searchParams.get('code');
 
+  const renderDraftedStudents = (className = "") => {
+    const teamSelections = state.students.filter(s => s.selectedBy === teamId && s.category === state.currentCategory);
+    if (teamSelections.length === 0) return null;
+    return (
+      <div className={clsx("w-full animate-in fade-in slide-in-from-bottom-4 duration-700", className)}>
+        <div className="text-[10px] text-white/40 uppercase tracking-widest font-bold mb-4 flex items-center justify-between px-2">
+          <span>Drafted in {state.currentCategory}</span>
+          <span className={clsx("px-2 py-0.5 rounded-full bg-white/10 border border-white/5 text-white shadow-inner", team.text)}>{teamSelections.length}</span>
+        </div>
+        
+        <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory custom-scrollbar pb-6 px-2 mask-linear-fade">
+          {teamSelections.map(s => (
+            <div key={s.id} className={clsx(
+              "snap-center shrink-0 w-[140px] relative overflow-hidden rounded-[24px] border backdrop-blur-xl shadow-2xl flex flex-col p-4 transition-transform hover:-translate-y-2 group", 
+              team.color.replace('bg-', 'bg-').replace('500', '500/5'), 
+              `border-${team.color.replace('bg-', '')}/20`
+            )}>
+              {/* Glass Glare */}
+              <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent"></div>
+              <div className={clsx("absolute -top-10 -right-10 w-24 h-24 blur-[30px] rounded-full opacity-30", team.color)}></div>
+              
+              <div className="relative mx-auto mb-4 mt-2">
+                <img src={s.photo} alt={s.name} className={clsx("w-16 h-16 rounded-full object-cover shadow-[0_10px_20px_rgba(0,0,0,0.5)] border-2 z-10 relative", `border-${team.color.replace('bg-', '')}`)} />
+                <div className={clsx("absolute -bottom-2 left-1/2 -translate-x-1/2 bg-[#121212] px-2.5 py-0.5 rounded-md border text-[9px] font-bold tracking-widest z-20 shadow-xl", team.text, `border-${team.color.replace('bg-', '')}/50`)}>
+                  {s.chestNo}
+                </div>
+              </div>
+              
+              <div className="flex-1 flex flex-col justify-end text-center mt-1">
+                <div className="text-xs font-bold text-white leading-tight line-clamp-2 drop-shadow-md">{s.name}</div>
+                <div className={clsx("text-[9px] font-bold uppercase tracking-widest mt-1.5 opacity-70", team.text)}>{s.class}</div>
+              </div>
+              
+              <div className={clsx("absolute top-3 right-3 w-5 h-5 rounded-full bg-black/40 border flex items-center justify-center backdrop-blur-sm", `border-${team.color.replace('bg-', '')}/30`)}>
+                <Check className={clsx("w-3 h-3", team.text)} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   // Auto-focus search on mount
   useEffect(() => {
     if (searchInputRef.current) {
@@ -126,6 +169,9 @@ export default function TeamLeaderPortal() {
           <p className="text-white/40 max-w-[250px] leading-relaxed text-sm font-bold uppercase tracking-wider">
             Waiting for your turn. Please wait until the admin enables your team's selection.
           </p>
+          
+          {/* Drafted Students on Waiting Screen */}
+          {renderDraftedStudents("max-w-md mt-12")}
         </div>
       </div>
     );
@@ -180,6 +226,9 @@ export default function TeamLeaderPortal() {
         
         <div className="w-full h-px bg-white/10 mt-8"></div>
       </div>
+
+      {/* Drafted Students */}
+      {renderDraftedStudents("px-4 mb-2 relative z-10")}
 
       {/* Search */}
       <div className="px-6 pb-4 sticky top-0 z-20">
