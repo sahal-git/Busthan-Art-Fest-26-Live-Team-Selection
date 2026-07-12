@@ -1,16 +1,79 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useEventState } from '../lib/store';
-import { Search, Play, Pause, RotateCcw, XCircle, Settings, LayoutList, Clock, Shield, Lock, Activity, UserPlus, CheckCircle2, ChevronDown } from 'lucide-react';
+import { Search, Play, Pause, RotateCcw, XCircle, Settings, LayoutList, Clock, Shield, Lock, Activity, UserPlus, CheckCircle2, ChevronDown, Repeat } from 'lucide-react';
 import clsx from 'clsx';
 import { audioManager } from '../lib/audio';
 
 export default function AdminDashboard() {
-  const { state, updateState, decrementTimer, toggleTimer, selectStudent, manualAssignStudent } = useEventState();
+  const { state, updateState, decrementTimer, toggleTimer, selectStudent, manualAssignStudent, unassignStudent } = useEventState();
   const [search, setSearch] = useState('');
   const [showManualAssign, setShowManualAssign] = useState(false);
   const [manualTeamId, setManualTeamId] = useState('');
   const [manualStudentId, setManualStudentId] = useState('');
+  const [autoCycleEnabled, setAutoCycleEnabled] = useState(() => {
+    return localStorage.getItem('autoCycleEnabled') === 'true';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('autoCycleEnabled', autoCycleEnabled);
+  }, [autoCycleEnabled]);
+
+  const prevLatestSelectionsRef = useRef(state.latestSelections);
+
+  useEffect(() => {
+    // If auto-cycle is disabled, just track the latest selections
+    if (!autoCycleEnabled) {
+      prevLatestSelectionsRef.current = state.latestSelections;
+      return;
+    }
+
+    if (state.latestSelections.length > 0 && prevLatestSelectionsRef.current.length > 0) {
+      const latestId = state.latestSelections[0].id;
+      const prevLatestId = prevLatestSelectionsRef.current[0]?.id;
+      
+      if (latestId !== prevLatestId) {
+        // A new selection occurred!
+        const teamId = state.latestSelections[0].teamId;
+        const currentTeamIndex = state.teams.findIndex(t => t.id === teamId);
+        
+        if (currentTeamIndex !== -1 && state.teams.length > 0) {
+          const N = state.teams.length;
+          
+          let cycleStartIndex = parseInt(localStorage.getItem('cycleStartIndex') || '0');
+          let turnCount = parseInt(localStorage.getItem('turnCount') || '0');
+          
+          turnCount += 1;
+          
+          let nextTeamIndex;
+          if (turnCount >= N) {
+            // Round finished
+            cycleStartIndex = (cycleStartIndex + 1) % N;
+            nextTeamIndex = cycleStartIndex;
+            turnCount = 0;
+            localStorage.setItem('cycleStartIndex', cycleStartIndex.toString());
+          } else {
+            nextTeamIndex = (currentTeamIndex + 1) % N;
+          }
+          
+          localStorage.setItem('turnCount', turnCount.toString());
+          
+          const nextTeam = state.teams[nextTeamIndex];
+          
+          // Wait a brief moment before cycling to ensure smooth UI transition
+          setTimeout(() => {
+            updateState({
+              currentTeam: nextTeam.id,
+              accessEnabled: true,
+              timerIsRunning: true,
+              timerTimeRemaining: state.defaultTimerDuration
+            });
+          }, 500);
+        }
+      }
+    }
+    prevLatestSelectionsRef.current = state.latestSelections;
+  }, [state.latestSelections, autoCycleEnabled, state.teams, updateState, state.defaultTimerDuration]);
 
   // Timer Interval
   useEffect(() => {
@@ -178,6 +241,11 @@ export default function AdminDashboard() {
                     key={team.id}
                     onClick={() => {
                       if (!isActive) {
+                        const idx = state.teams.findIndex(t => t.id === team.id);
+                        if (idx !== -1) {
+                          localStorage.setItem('cycleStartIndex', idx.toString());
+                          localStorage.setItem('turnCount', '0');
+                        }
                         updateState({ currentTeam: team.id, accessEnabled: true, timerTimeRemaining: state.defaultTimerDuration, timerIsRunning: true });
                       }
                     }}
@@ -261,6 +329,17 @@ export default function AdminDashboard() {
                         <div className={clsx("px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest border shadow-lg bg-white/10", team?.text, `border-${team?.color?.replace('bg-', '')}`)}>
                           {team?.name}
                         </div>
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (confirm(`Unassign ${student.name} from ${team?.name}?`)) {
+                              unassignStudent(student.id);
+                            }
+                          }}
+                          className="mt-3 bg-red-500/20 text-red-500 hover:bg-red-500 hover:text-white px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest transition-colors"
+                        >
+                          Unassign
+                        </button>
                       </div>
                     )}
                     
@@ -329,8 +408,22 @@ export default function AdminDashboard() {
                           <div className={clsx("text-xs font-bold uppercase tracking-widest flex items-center gap-1", team?.text)}>
                             <CheckCircle2 className="w-3 h-3" /> Assigned to {team?.name}
                           </div>
-                          <div className="text-[10px] uppercase tracking-widest text-white/30">
-                            {formatTimeAgo(sel.time)}
+                          <div className="flex items-center gap-2">
+                            <div className="text-[10px] uppercase tracking-widest text-white/30">
+                              {formatTimeAgo(sel.time)}
+                            </div>
+                            <button
+                              onClick={() => {
+                                const studentObj = state.students.find(s => s.name === sel.studentName);
+                                if (studentObj && confirm(`Unassign ${sel.studentName}?`)) {
+                                  unassignStudent(studentObj.id);
+                                }
+                              }}
+                              className="text-white/30 hover:text-red-400 p-1"
+                              title="Unassign"
+                            >
+                              <XCircle className="w-3 h-3" />
+                            </button>
                           </div>
                         </div>
                       </div>
@@ -374,6 +467,18 @@ export default function AdminDashboard() {
             </button>
             
             <div className="w-[1px] h-8 bg-white/10 mx-2"></div>
+
+            <button 
+              onClick={() => setAutoCycleEnabled(!autoCycleEnabled)}
+              className={clsx(
+                "flex items-center gap-2 px-5 py-3 rounded-full transition-colors text-xs font-bold uppercase tracking-wider",
+                autoCycleEnabled
+                  ? "bg-event-gold/20 text-event-gold border border-event-gold/50"
+                  : "bg-transparent hover:bg-white/10 text-white/70 hover:text-white"
+              )}
+            >
+              <Repeat className="w-4 h-4" /> {autoCycleEnabled ? "Auto-Cycle: ON" : "Auto-Cycle: OFF"}
+            </button>
 
             <button 
               onClick={() => updateState({ accessEnabled: false, currentTeam: null })}

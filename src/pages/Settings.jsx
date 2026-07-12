@@ -4,7 +4,7 @@ import { useEventState } from '../lib/store';
 import { audioManager } from '../lib/audio';
 
 export default function Settings() {
-  const { state, updateState } = useEventState();
+  const { state, updateState, resetCategorySelections, resetAllAssignments, undoLastSelection } = useEventState();
   const [resetConfirmText, setResetConfirmText] = useState('');
   const [timerDuration, setTimerDuration] = useState(state.defaultTimerDuration || 30);
 
@@ -134,17 +134,23 @@ export default function Settings() {
           
           <div className="flex flex-col gap-4 bg-red-500/5 p-8 rounded-3xl border border-red-500/20 backdrop-blur-md shadow-2xl">
             {[
-              { title: 'Reset Assignment', desc: 'Clear assignments for all students in the current category', btnText: 'Reset Assignment', icon: RotateCcw },
-              { title: 'Reset Current Category', desc: 'Clear all selections for the active category', btnText: 'Reset Category' },
-              { title: 'Reset Team Assignments', desc: 'Unassign all students from all teams', btnText: 'Reset Teams' }
-            ].map((action, i) => (
+              { title: 'Undo Last Assignment', desc: 'Undo the most recent student assignment globally', btnText: 'Undo Selection', icon: RotateCcw, action: undoLastSelection },
+              { title: 'Reset Current Category', desc: 'Clear all selections for the active category', btnText: 'Reset Category', action: () => resetCategorySelections(state.currentCategory) },
+              { title: 'Reset Team Assignments', desc: 'Unassign all students from all teams', btnText: 'Reset Teams', action: resetAllAssignments }
+            ].map((actionObj, i) => (
               <div key={i} className="flex items-center justify-between p-5 bg-[#0a0a0a]/50 rounded-2xl border border-red-500/10 hover:border-red-500/30 transition-all group">
                 <div>
-                  <div className="font-bold text-white uppercase tracking-widest text-sm mb-1">{action.title}</div>
-                  <div className="text-xs font-bold text-white/30 uppercase tracking-wider">{action.desc}</div>
+                  <div className="font-bold text-white uppercase tracking-widest text-sm mb-1">{actionObj.title}</div>
+                  <div className="text-xs font-bold text-white/30 uppercase tracking-wider">{actionObj.desc}</div>
                 </div>
-                <button className="flex items-center gap-2 px-5 py-2.5 bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-all rounded-full text-[10px] font-bold uppercase tracking-widest border border-red-500/20 hover:border-red-500/40 whitespace-nowrap group-hover:shadow-[0_0_15px_rgba(239,68,68,0.2)]">
-                  {action.icon && <action.icon className="w-3 h-3" />} {action.btnText}
+                <button 
+                  onClick={() => {
+                    if (confirm(`Are you sure you want to execute: ${actionObj.title}? This cannot be undone.`)) {
+                      actionObj.action();
+                    }
+                  }}
+                  className="flex items-center gap-2 px-5 py-2.5 bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-all rounded-full text-[10px] font-bold uppercase tracking-widest border border-red-500/20 hover:border-red-500/40 whitespace-nowrap group-hover:shadow-[0_0_15px_rgba(239,68,68,0.2)]">
+                  {actionObj.icon && <actionObj.icon className="w-3 h-3" />} {actionObj.btnText}
                 </button>
               </div>
             ))}

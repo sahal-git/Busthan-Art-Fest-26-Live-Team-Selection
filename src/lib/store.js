@@ -271,6 +271,109 @@ export const useEventState = () => {
     await supabase.from('students').update(updates).eq('id', studentId);
   }, []);
 
+  const unassignStudent = useCallback(async (studentId) => {
+    const student = globalState.students.find(s => s.id === studentId);
+    if (!student) return;
+
+    // Optimistic update
+    const updatedStudents = globalState.students.map(s => 
+      s.id === studentId ? { ...s, status: 'available', selectedBy: null, team: null } : s
+    );
+
+    // Remove from latest selections if present
+    const updatedLatestSelections = globalState.latestSelections.filter(sel => sel.studentName !== student.name);
+
+    globalState = {
+      ...globalState,
+      students: updatedStudents,
+      latestSelections: updatedLatestSelections
+    };
+    notifyListeners();
+
+    // Update Supabase
+    await Promise.all([
+      supabase.from('students').update({ status: 'available', selectedBy: null, team: null }).eq('id', studentId),
+      supabase.from('latest_selections').delete().eq('studentName', student.name)
+    ]);
+  }, []);
+
+  const resetCategorySelections = useCallback(async (category) => {
+    const updatedStudents = globalState.students.map(s => 
+      s.category === category && s.status === 'selected' 
+        ? { ...s, status: 'available', selectedBy: null, team: null } 
+        : s
+    );
+    
+    globalState = {
+      ...globalState,
+      students: updatedStudents,
+      latestSelections: [],
+      currentTeam: null,
+      accessEnabled: false,
+      timerIsRunning: false
+    };
+    notifyListeners();
+    
+    await Promise.all([
+      supabase.from('students').update({ status: 'available', selectedBy: null, team: null }).eq('category', category),
+      supabase.from('latest_selections').delete().neq('id', 0), // Delete all latest selections
+      supabase.from('event_state').update({ currentTeam: null, accessEnabled: false, timerIsRunning: false }).eq('id', 1)
+    ]);
+  }, []);
+
+  const resetAllAssignments = useCallback(async () => {
+    const updatedStudents = globalState.students.map(s => 
+      s.status === 'selected' 
+        ? { ...s, status: 'available', selectedBy: null, team: null } 
+        : s
+    );
+    
+    globalState = {
+      ...globalState,
+      students: updatedStudents,
+      latestSelections: [],
+      currentTeam: null,
+      accessEnabled: false,
+      timerIsRunning: false
+    };
+    notifyListeners();
+    
+    await Promise.all([
+      supabase.from('students').update({ status: 'available', selectedBy: null, team: null }).neq('status', 'available'),
+      supabase.from('latest_selections').delete().neq('id', 0),
+      supabase.from('event_state').update({ currentTeam: null, accessEnabled: false, timerIsRunning: false }).eq('id', 1)
+    ]);
+  }, []);
+
+  const undoLastSelection = useCallback(async () => {
+    if (globalState.latestSelections.length === 0) return;
+    
+    const lastSelection = globalState.latestSelections[0];
+    const student = globalState.students.find(s => s.name === lastSelection.studentName);
+    
+    if (student) {
+      // Optimistic update
+      const updatedStudents = globalState.students.map(s => 
+        s.id === student.id ? { ...s, status: 'available', selectedBy: null } : s
+      );
+      
+      const updatedLatestSelections = globalState.latestSelections.slice(1);
+      
+      globalState = {
+        ...globalState,
+        students: updatedStudents,
+        latestSelections: updatedLatestSelections
+      };
+      notifyListeners();
+      
+      // Update Supabase
+      await Promise.all([
+        supabase.from('students').update({ status: 'available', selectedBy: null }).eq('id', student.id),
+        supabase.from('latest_selections').delete().eq('id', lastSelection.id)
+      ]);
+    }
+  }, []);
+
   const deleteStudent = useCallback(async (studentId) => {
     // Optimistic update
     const updatedStudents = globalState.students.filter(s => s.id !== studentId);
@@ -281,5 +384,5 @@ export const useEventState = () => {
     await supabase.from('students').delete().eq('id', studentId);
   }, []);
 
-  return { state, updateState, selectStudent, manualAssignStudent, decrementTimer, toggleTimer, regenerateLoginCode, updateStudent, deleteStudent };
+  return { state, updateState, selectStudent, manualAssignStudent, decrementTimer, toggleTimer, regenerateLoginCode, updateStudent, deleteStudent, resetCategorySelections, resetAllAssignments, unassignStudent, undoLastSelection };
 };
