@@ -6,7 +6,7 @@ const SOUND_URLS = {
   'countdown-start': 'https://actions.google.com/sounds/v1/ui/button_click.ogg',
   'countdown-pulse': 'https://actions.google.com/sounds/v1/foley/heartbeat.ogg',
   'selection-success': 'https://actions.google.com/sounds/v1/crowds/crowd_cheer.ogg',
-  'team-reveal': 'https://actions.google.com/sounds/v1/weapons/deep_impact.ogg',
+  'team-reveal': '/audio/swoosh.mp3',
   'selection-complete': 'https://actions.google.com/sounds/v1/ui/bell_ding.ogg',
   'undo-selection': 'https://actions.google.com/sounds/v1/water/water_slosh.ogg',
   'manual-assignment': 'https://actions.google.com/sounds/v1/ui/piano_note.ogg',
@@ -14,7 +14,8 @@ const SOUND_URLS = {
   'category-change': 'https://actions.google.com/sounds/v1/science_fiction/sweep_down.ogg',
   'error': 'https://actions.google.com/sounds/v1/alarms/beep_short.ogg',
   'reconnect': 'https://actions.google.com/sounds/v1/ui/positive_alert.ogg',
-  'disconnect': 'https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg'
+  'disconnect': 'https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg',
+  'timer-music': '/audio/timer.webm'
 };
 
 class AudioManager {
@@ -61,7 +62,7 @@ class AudioManager {
     return this.volumes.master * catVol;
   }
 
-  play(soundId, category = 'effects', loop = false) {
+  play(soundId, category = 'effects', loop = false, startTime = 0) {
     if (this.isMuted) return;
 
     const sound = this.sounds[soundId];
@@ -70,17 +71,27 @@ class AudioManager {
       return;
     }
 
-    if (loop && this.activeLoops[soundId]) {
-      return; // Already looping
+    if ((loop || soundId === 'timer-music') && this.activeLoops[soundId]) {
+      return; // Already playing
     }
 
     const audioClone = sound.cloneNode();
     audioClone.volume = this.getCalculatedVolume(category);
     audioClone.datasetCategory = category;
     
+    if (startTime > 0) {
+      audioClone.currentTime = startTime;
+    }
+    
     if (loop) {
       audioClone.loop = true;
+    }
+    
+    if (loop || soundId === 'timer-music') {
       this.activeLoops[soundId] = audioClone;
+      if (!loop) {
+        audioClone.onended = () => delete this.activeLoops[soundId];
+      }
     }
 
     audioClone.play().catch(e => console.warn("Audio playback failed (usually requires user interaction first):", e));

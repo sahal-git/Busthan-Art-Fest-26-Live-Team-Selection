@@ -53,11 +53,12 @@ export default function MainStageDisplay() {
       audioManager.play('team-activated', 'effects');
     }
     
-    // Heartbeat Pulse Logic
-    if (state.currentTeam && state.timerIsRunning && state.timerTimeRemaining <= 10 && state.timerTimeRemaining > 0) {
-      audioManager.play('countdown-pulse', 'countdown', true); // Loop
+    // Timer Music Logic
+    if (state.timerIsRunning && state.timerTimeRemaining > 0) {
+      const startTime = Math.max(0, state.defaultTimerDuration - state.timerTimeRemaining);
+      audioManager.play('timer-music', 'countdown', false, startTime);
     } else {
-      audioManager.stop('countdown-pulse');
+      audioManager.stop('timer-music');
     }
 
     // Timer expired
@@ -110,7 +111,7 @@ export default function MainStageDisplay() {
 
     if (audioEnabled) {
       // Stop countdown if it's playing
-      audioManager.stop('countdown-pulse');
+      audioManager.stop('timer-music');
 
       // Play Success celebration immediately
       audioManager.play('selection-success', 'celebration');

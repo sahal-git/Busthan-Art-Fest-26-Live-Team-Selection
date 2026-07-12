@@ -163,7 +163,7 @@ export default function AdminDashboard() {
                   key={cat}
                   onClick={() => {
                     audioManager.play('category-change', 'effects');
-                    updateState({ currentCategory: cat, currentTeam: null, accessEnabled: false, timerIsRunning: false, timerTimeRemaining: 24 });
+                    updateState({ currentCategory: cat, currentTeam: null, accessEnabled: false, timerIsRunning: false, timerTimeRemaining: state.defaultTimerDuration });
                   }}
                   className={clsx(
                     "px-4 py-2 text-xs font-bold tracking-wider rounded-full transition-all border",
@@ -192,7 +192,7 @@ export default function AdminDashboard() {
                     key={team.id}
                     onClick={() => {
                       if (!isActive) {
-                        updateState({ currentTeam: team.id, accessEnabled: true, timerTimeRemaining: 24, timerIsRunning: true });
+                        updateState({ currentTeam: team.id, accessEnabled: true, timerTimeRemaining: state.defaultTimerDuration, timerIsRunning: true });
                       }
                     }}
                     className={clsx(

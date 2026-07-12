@@ -6,6 +6,7 @@ import { audioManager } from '../lib/audio';
 export default function Settings() {
   const { state, updateState } = useEventState();
   const [resetConfirmText, setResetConfirmText] = useState('');
+  const [timerDuration, setTimerDuration] = useState(state.defaultTimerDuration || 30);
 
   const handleVolumeChange = (key, value) => {
     updateState({ [key]: parseInt(value, 10) });
@@ -50,11 +51,19 @@ export default function Settings() {
             
             <div>
               <label className="block text-xs font-bold text-white/40 mb-3 uppercase tracking-widest">Default Timer Duration (Seconds)</label>
-              <input type="number" defaultValue="24" className="w-full bg-[#121212] border border-white/10 rounded-xl px-5 py-4 text-white font-mono text-xl focus:outline-none focus:border-event-gold/50 transition-all shadow-inner" />
+              <input 
+                type="number" 
+                value={timerDuration} 
+                onChange={e => setTimerDuration(parseInt(e.target.value) || 0)}
+                className="w-full bg-[#121212] border border-white/10 rounded-xl px-5 py-4 text-white font-mono text-xl focus:outline-none focus:border-event-gold/50 transition-all shadow-inner" 
+              />
             </div>
             
             <div className="flex items-center justify-end mt-4 pt-6 border-t border-white/5">
-              <button className="px-8 py-3 bg-event-gold/10 text-event-gold hover:bg-event-gold/20 transition-all rounded-full text-xs font-bold uppercase tracking-widest border border-event-gold/20 hover:border-event-gold/40 hover:shadow-[0_0_15px_rgba(255,215,0,0.2)]">
+              <button 
+                onClick={() => updateState({ defaultTimerDuration: timerDuration })}
+                className="px-8 py-3 bg-event-gold/10 text-event-gold hover:bg-event-gold/20 transition-all rounded-full text-xs font-bold uppercase tracking-widest border border-event-gold/20 hover:border-event-gold/40 hover:shadow-[0_0_15px_rgba(255,215,0,0.2)]"
+              >
                 Save Changes
               </button>
             </div>

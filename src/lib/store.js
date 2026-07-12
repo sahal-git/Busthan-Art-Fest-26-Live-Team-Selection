@@ -5,8 +5,9 @@ const INITIAL_STATE = {
   currentCategory: 'Senior',
   currentTeam: null,
   accessEnabled: false,
-  timerTimeRemaining: 24,
+  timerTimeRemaining: 30,
   timerIsRunning: false,
+  defaultTimerDuration: parseInt(localStorage.getItem('defaultTimerDuration')) || 30,
   students: [],
   teams: [],
   categories: [],
@@ -124,6 +125,10 @@ export const useEventState = () => {
     globalState = { ...globalState, ...updates };
     notifyListeners();
 
+    if (updates.defaultTimerDuration !== undefined) {
+      localStorage.setItem('defaultTimerDuration', updates.defaultTimerDuration);
+    }
+
     // Find which keys belong to event_state vs others
     // For now we assume all `updates` are event_state fields unless explicitly handled
     const eventStateFields = [
@@ -183,7 +188,14 @@ export const useEventState = () => {
   }, []);
 
   const decrementTimer = useCallback(async () => {
+    const now = Date.now();
+    const lastDecStr = localStorage.getItem('_lastDecrementTime');
+    const lastDec = lastDecStr ? parseInt(lastDecStr, 10) : 0;
+    
+    if (now - lastDec < 800) return;
+
     if (globalState.timerIsRunning && globalState.timerTimeRemaining > 0) {
+      localStorage.setItem('_lastDecrementTime', now.toString());
       const newTime = globalState.timerTimeRemaining - 1;
       
       // Optimistic

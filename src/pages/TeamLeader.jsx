@@ -13,6 +13,7 @@ export default function TeamLeaderPortal() {
   const [selectedStudentId, setSelectedStudentId] = useState(null);
   const [submissionState, setSubmissionState] = useState('idle'); // 'idle' | 'selecting' | 'success'
   const [focusedIndex, setFocusedIndex] = useState(-1);
+  const [activeTab, setActiveTab] = useState('available'); // 'available' | 'drafted'
   
   const searchInputRef = useRef(null);
 
@@ -21,7 +22,13 @@ export default function TeamLeaderPortal() {
 
   const renderDraftedStudents = (className = "") => {
     const teamSelections = state.students.filter(s => s.selectedBy === teamId && s.category === state.currentCategory);
-    if (teamSelections.length === 0) return null;
+    if (teamSelections.length === 0) {
+      return (
+        <div className="text-center text-white/30 mt-12 text-xs font-bold uppercase tracking-widest">
+          No students drafted yet
+        </div>
+      );
+    }
     return (
       <div className={clsx("w-full animate-in fade-in slide-in-from-bottom-4 duration-700", className)}>
         <div className="text-[10px] text-white/40 uppercase tracking-widest font-bold mb-4 flex items-center justify-between px-2">
@@ -29,10 +36,10 @@ export default function TeamLeaderPortal() {
           <span className={clsx("px-2 py-0.5 rounded-full bg-white/10 border border-white/5 text-white shadow-inner", team.text)}>{teamSelections.length}</span>
         </div>
         
-        <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory custom-scrollbar pb-6 px-2 mask-linear-fade">
+        <div className="grid grid-cols-2 gap-4 pb-6 px-2">
           {teamSelections.map(s => (
             <div key={s.id} className={clsx(
-              "snap-center shrink-0 w-[140px] relative overflow-hidden rounded-[24px] border backdrop-blur-xl shadow-2xl flex flex-col p-4 transition-transform hover:-translate-y-2 group", 
+              "w-full relative overflow-hidden rounded-[24px] border backdrop-blur-xl shadow-2xl flex flex-col p-4 transition-transform hover:-translate-y-2 group", 
               team.color.replace('bg-', 'bg-').replace('500', '500/5'), 
               `border-${team.color.replace('bg-', '')}/20`
             )}>
@@ -200,56 +207,86 @@ export default function TeamLeaderPortal() {
       <div className={`absolute top-0 right-0 w-full h-[50vh] ${team.color.replace('bg-', 'bg-')}/5 blur-[150px] pointer-events-none rounded-full`}></div>
 
       {/* Hero Header */}
-      <div className="pt-10 pb-6 px-6 relative z-10 flex flex-col items-center text-center">
-        <div className="text-xs uppercase tracking-[0.3em] text-white/50 mb-4 font-bold">Busthan Art Fest</div>
-        <div className="w-full h-px bg-white/10 mb-6"></div>
-        
-        <h1 className={clsx("text-4xl font-black tracking-widest uppercase mb-4", team.text)}>
-          {team.name}
-        </h1>
-        
-        <div className={clsx(
-          "text-[10px] px-4 py-1.5 rounded-full font-bold uppercase tracking-widest border shadow-[0_0_20px_currentColor] mb-6 transition-colors",
-          team.color.replace('bg-', 'bg-').replace('500', '500/20'),
-          team.text,
-          `border-${team.color.replace('bg-', '')}/50`
-        )}>
-          Your Turn
+      <div className="pt-4 pb-3 px-6 relative z-10 flex flex-col">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-col">
+            <div className="text-[9px] uppercase tracking-[0.2em] text-white/50 mb-1 font-bold">Busthan Art Fest</div>
+            <div className="flex items-center gap-3">
+              <h1 className={clsx("text-2xl font-black tracking-widest uppercase", team.text)}>
+                {team.name}
+              </h1>
+              <div className={clsx(
+                "text-[8px] px-2 py-0.5 rounded-sm font-bold uppercase tracking-widest border shadow-[0_0_10px_currentColor] transition-colors",
+                team.color.replace('bg-', 'bg-').replace('500', '500/20'),
+                team.text,
+                `border-${team.color.replace('bg-', '')}/50`
+              )}>
+                Your Turn
+              </div>
+            </div>
+          </div>
+          <div className={clsx(
+            "font-mono text-4xl font-light tracking-wider drop-shadow-[0_0_10px_currentColor] transition-colors",
+            isTimeCritical ? 'text-red-500 animate-pulse' : team.text
+          )}>
+            {String(state.timerTimeRemaining).padStart(2, '0')}s
+          </div>
         </div>
         
-        <div className={clsx(
-          "font-mono text-7xl font-light tracking-wider drop-shadow-[0_0_15px_currentColor] transition-colors",
-          isTimeCritical ? 'text-red-500 animate-pulse' : team.text
-        )}>
-          00:{String(state.timerTimeRemaining).padStart(2, '0')}
+        {/* Tabs */}
+        <div className="flex gap-2 w-full bg-[#1a1a1a] p-1 rounded-full border border-white/5">
+          <button 
+            onClick={() => setActiveTab('available')}
+            className={clsx(
+              "flex-1 py-2.5 text-[10px] font-bold uppercase tracking-widest rounded-full transition-all",
+              activeTab === 'available' ? `bg-white/10 ${team.text} shadow-inner` : "text-white/40 hover:text-white"
+            )}
+          >
+            Available
+          </button>
+          <button 
+            onClick={() => setActiveTab('drafted')}
+            className={clsx(
+              "flex-1 py-2.5 text-[10px] font-bold uppercase tracking-widest rounded-full transition-all flex items-center justify-center gap-2",
+              activeTab === 'drafted' ? `bg-white/10 ${team.text} shadow-inner` : "text-white/40 hover:text-white"
+            )}
+          >
+            Drafted
+            <span className={clsx("px-1.5 py-0.5 rounded-full bg-black/30 text-[8px]", activeTab === 'drafted' ? team.text : "text-white/30")}>
+              {state.students.filter(s => s.selectedBy === teamId && s.category === state.currentCategory).length}
+            </span>
+          </button>
         </div>
-        
-        <div className="w-full h-px bg-white/10 mt-8"></div>
       </div>
 
-      {/* Drafted Students */}
-      {renderDraftedStudents("px-4 mb-2 relative z-10")}
-
-      {/* Search */}
-      <div className="px-6 pb-4 sticky top-0 z-20">
-        <div className="relative group">
-          <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-6 h-6 text-white/30 group-focus-within:text-white transition-colors" />
-          <input 
-            ref={searchInputRef}
-            type="text" 
-            placeholder="Search chest number or name..." 
-            value={search}
-            onChange={e => {
-              setSearch(e.target.value);
-              setSelectedStudentId(null);
-            }}
-            className="w-full bg-white/5 border border-white/10 rounded-2xl py-5 pl-14 pr-5 text-white font-medium text-lg focus:outline-none focus:border-white/30 focus:bg-white/10 transition-all shadow-inner placeholder:text-white/20 backdrop-blur-md"
-          />
+      {activeTab === 'drafted' && (
+        <div className="flex-1 overflow-y-auto px-2 pb-40 custom-scrollbar relative z-10">
+          {renderDraftedStudents("px-4 mb-2 relative z-10")}
         </div>
-      </div>
+      )}
 
-      {/* List */}
-      <div className="flex-1 overflow-y-auto px-6 pb-40 custom-scrollbar relative z-10">
+      {activeTab === 'available' && (
+        <>
+          {/* Search */}
+          <div className="px-6 pb-4 sticky top-0 z-20">
+            <div className="relative group">
+              <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-6 h-6 text-white/30 group-focus-within:text-white transition-colors" />
+              <input 
+                ref={searchInputRef}
+                type="text" 
+                placeholder="Search chest number or name..." 
+                value={search}
+                onChange={e => {
+                  setSearch(e.target.value);
+                  setSelectedStudentId(null);
+                }}
+                className="w-full bg-white/5 border border-white/10 rounded-2xl py-5 pl-14 pr-5 text-white font-medium text-lg focus:outline-none focus:border-white/30 focus:bg-white/10 transition-all shadow-inner placeholder:text-white/20 backdrop-blur-md"
+              />
+            </div>
+          </div>
+
+          {/* List */}
+          <div className="flex-1 overflow-y-auto px-6 pb-40 custom-scrollbar relative z-10">
         <div className="flex flex-col gap-3">
           {filteredStudents.length === 0 ? (
             <div className="text-center text-white/30 mt-12 text-xs font-bold uppercase tracking-widest">
@@ -304,6 +341,8 @@ export default function TeamLeaderPortal() {
           )}
         </div>
       </div>
+      </>
+      )}
 
       {/* Floating Confirmation Panel */}
       {selectedStudent && (
