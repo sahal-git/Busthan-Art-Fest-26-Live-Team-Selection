@@ -125,29 +125,31 @@ export default function MainStageDisplay() {
     setTimeout(() => setShowFlash(false), 200); // Quick flash
 
     // Confetti effect
-    var duration = 4000;
-    var end = Date.now() + duration;
+    setTimeout(() => {
+      var duration = 4000;
+      var end = Date.now() + duration;
 
-    (function frame() {
-      confetti({
-        particleCount: 5,
-        angle: 60,
-        spread: 55,
-        origin: { x: 0 },
-        colors: ['#FFD700', '#ffffff']
-      });
-      confetti({
-        particleCount: 5,
-        angle: 120,
-        spread: 55,
-        origin: { x: 1 },
-        colors: ['#FFD700', '#ffffff']
-      });
+      (function frame() {
+        confetti({
+          particleCount: 5,
+          angle: 60,
+          spread: 55,
+          origin: { x: 0 },
+          colors: ['#FFD700', '#ffffff']
+        });
+        confetti({
+          particleCount: 5,
+          angle: 120,
+          spread: 55,
+          origin: { x: 1 },
+          colors: ['#FFD700', '#ffffff']
+        });
 
-      if (Date.now() < end) {
-        requestAnimationFrame(frame);
-      }
-    }());
+        if (Date.now() < end) {
+          requestAnimationFrame(frame);
+        }
+      }());
+    }, 800);
 
     // Clear animation after 4.5 seconds and play completion chime
     setTimeout(() => {
