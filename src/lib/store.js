@@ -187,6 +187,36 @@ export const useEventState = () => {
     ]);
   }, []);
 
+  const manualAssignStudent = useCallback(async (studentId, teamId) => {
+    const student = globalState.students.find(s => s.id === studentId);
+    if (!student) return;
+
+    // Optimistic update
+    const updatedStudents = globalState.students.map(s => 
+      s.id === studentId ? { ...s, status: 'selected', selectedBy: teamId } : s
+    );
+
+    const newSelection = {
+      id: Date.now(),
+      studentName: student.name,
+      teamId,
+      time: new Date().toISOString()
+    };
+
+    globalState = {
+      ...globalState,
+      students: updatedStudents,
+      latestSelections: [newSelection, ...globalState.latestSelections].slice(0, 5)
+    };
+    notifyListeners();
+
+    // Update Supabase
+    await Promise.all([
+      supabase.from('students').update({ status: 'selected', selectedBy: teamId }).eq('id', studentId),
+      supabase.from('latest_selections').insert([newSelection])
+    ]);
+  }, []);
+
   const decrementTimer = useCallback(async () => {
     const now = Date.now();
     const lastDecStr = localStorage.getItem('_lastDecrementTime');
@@ -251,5 +281,5 @@ export const useEventState = () => {
     await supabase.from('students').delete().eq('id', studentId);
   }, []);
 
-  return { state, updateState, selectStudent, decrementTimer, toggleTimer, regenerateLoginCode, updateStudent, deleteStudent };
+  return { state, updateState, selectStudent, manualAssignStudent, decrementTimer, toggleTimer, regenerateLoginCode, updateStudent, deleteStudent };
 };

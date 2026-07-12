@@ -6,7 +6,7 @@ import clsx from 'clsx';
 import { audioManager } from '../lib/audio';
 
 export default function AdminDashboard() {
-  const { state, updateState, decrementTimer, toggleTimer, selectStudent } = useEventState();
+  const { state, updateState, decrementTimer, toggleTimer, selectStudent, manualAssignStudent } = useEventState();
   const [search, setSearch] = useState('');
   const [showManualAssign, setShowManualAssign] = useState(false);
   const [manualTeamId, setManualTeamId] = useState('');
@@ -71,22 +71,8 @@ export default function AdminDashboard() {
   const executeManualAssign = () => {
     if (!manualTeamId || !manualStudentId) return;
     audioManager.play('manual-assignment', 'effects');
-    const student = state.students.find(s => s.id === manualStudentId);
-    const updatedStudents = state.students.map(s => 
-      s.id === manualStudentId ? { ...s, status: 'selected', selectedBy: manualTeamId, team: manualTeamId } : s
-    );
     
-    const newSelection = {
-      id: Date.now(),
-      studentName: student.name,
-      teamId: manualTeamId,
-      time: new Date().toISOString()
-    };
-
-    updateState({ 
-      students: updatedStudents,
-      latestSelections: [newSelection, ...state.latestSelections].slice(0, 5)
-    });
+    manualAssignStudent(manualStudentId, manualTeamId);
     
     setShowManualAssign(false);
     setManualStudentId('');

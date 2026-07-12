@@ -3,12 +3,15 @@ import { useEventState } from '../lib/store';
 import { Search, Upload, Download, Trash2, Edit2, X, RotateCcw, Users, Lock, MoreHorizontal } from 'lucide-react';
 import { audioManager } from '../lib/audio';
 import clsx from 'clsx';
+import { exportAllToExcelCategories, exportTeamToExcel, exportTeamToPDF } from '../lib/exportUtils';
 
 export default function Students() {
   const { state, updateState, updateStudent, deleteStudent } = useEventState();
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('All');
   const [editingStudent, setEditingStudent] = useState(null);
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exportTeamId, setExportTeamId] = useState('');
 
   const filteredStudents = state.students.filter(s => {
     const matchesSearch = s.name.toLowerCase().includes(search.toLowerCase()) || s.chestNo.includes(search);
@@ -34,7 +37,7 @@ export default function Students() {
           <button className="flex items-center gap-2 px-5 py-2.5 bg-white/5 hover:bg-white/10 transition-all rounded-full text-xs font-bold uppercase tracking-widest border border-white/10 hover:border-white/20 hover:shadow-lg">
             <Upload className="w-4 h-4" /> Import
           </button>
-          <button className="flex items-center gap-2 px-5 py-2.5 bg-white/5 hover:bg-white/10 transition-all rounded-full text-xs font-bold uppercase tracking-widest border border-white/10 hover:border-white/20 hover:shadow-lg">
+          <button onClick={() => setShowExportModal(true)} className="flex items-center gap-2 px-5 py-2.5 bg-white/5 hover:bg-white/10 transition-all rounded-full text-xs font-bold uppercase tracking-widest border border-white/10 hover:border-white/20 hover:shadow-lg">
             <Download className="w-4 h-4" /> Export
           </button>
           <button className="flex items-center gap-2 px-5 py-2.5 bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-all rounded-full text-xs font-bold uppercase tracking-widest border border-red-500/20 hover:border-red-500/40 hover:shadow-[0_0_15px_rgba(239,68,68,0.2)]">
@@ -208,6 +211,73 @@ export default function Students() {
                   });
                   setEditingStudent(null);
                 }} className="px-5 py-2.5 bg-event-gold text-charcoal hover:bg-white transition-all rounded-xl text-xs font-bold uppercase tracking-widest shadow-[0_0_15px_rgba(255,215,0,0.3)]">Save Changes</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Export Modal */}
+      {showExportModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="glass-panel w-full max-w-md p-8 rounded-3xl border border-white/10 shadow-2xl relative">
+            <button onClick={() => setShowExportModal(false)} className="absolute top-6 right-6 text-white/40 hover:text-white transition-colors">
+              <X className="w-5 h-5" />
+            </button>
+            <h2 className="text-xl font-bold text-white tracking-widest uppercase mb-6 flex items-center gap-3">
+              <Download className="w-5 h-5 text-blue-400" /> Export Data
+            </h2>
+            
+            <div className="space-y-6">
+              <div className="p-4 bg-white/5 rounded-xl border border-white/10">
+                <h3 className="text-sm font-bold text-white uppercase tracking-widest mb-2">All Students</h3>
+                <p className="text-xs text-white/60 mb-4">Export all students into an Excel file with category-based sheets.</p>
+                <button 
+                  onClick={() => exportAllToExcelCategories(state.students, state.teams)}
+                  className="w-full flex justify-center items-center gap-2 px-5 py-2.5 bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 transition-all rounded-xl text-xs font-bold uppercase tracking-widest border border-blue-500/20"
+                >
+                  <Download className="w-4 h-4" /> Download All (Excel)
+                </button>
+              </div>
+
+              <div className="p-4 bg-white/5 rounded-xl border border-white/10">
+                <h3 className="text-sm font-bold text-white uppercase tracking-widest mb-2">Team Export</h3>
+                <p className="text-xs text-white/60 mb-4">Export students for a specific team in PDF or Excel format.</p>
+                
+                <div className="mb-4">
+                  <select 
+                    value={exportTeamId}
+                    onChange={e => setExportTeamId(e.target.value)}
+                    className="w-full bg-[#121212] border border-white/10 rounded-xl px-4 py-3 text-sm font-bold uppercase tracking-wider text-white focus:outline-none focus:border-blue-400/50 transition-all appearance-none shadow-inner"
+                  >
+                    <option value="" disabled>Select a Team</option>
+                    {state.teams.map(team => (
+                      <option key={team.id} value={team.id}>{team.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="flex gap-3">
+                  <button 
+                    disabled={!exportTeamId}
+                    onClick={() => {
+                      const team = state.teams.find(t => t.id === exportTeamId);
+                      if(team) exportTeamToPDF(state.students, team);
+                    }}
+                    className="flex-1 flex justify-center items-center gap-2 px-5 py-2.5 bg-red-500/10 text-red-400 hover:bg-red-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all rounded-xl text-xs font-bold uppercase tracking-widest border border-red-500/20"
+                  >
+                    <Download className="w-4 h-4" /> PDF
+                  </button>
+                  <button 
+                    disabled={!exportTeamId}
+                    onClick={() => {
+                      const team = state.teams.find(t => t.id === exportTeamId);
+                      if(team) exportTeamToExcel(state.students, team);
+                    }}
+                    className="flex-1 flex justify-center items-center gap-2 px-5 py-2.5 bg-green-500/10 text-green-400 hover:bg-green-500/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all rounded-xl text-xs font-bold uppercase tracking-widest border border-green-500/20"
+                  >
+                    <Download className="w-4 h-4" /> Excel
+                  </button>
+                </div>
               </div>
             </div>
           </div>
