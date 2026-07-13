@@ -78,5 +78,13 @@ export const ANIMATION_VARIANTS = [
     nameText: "animate-in zoom-in-[1.5] fade-in duration-700 delay-[500ms] fill-mode-both text-shadow-glow",
     chestNoText: "animate-in zoom-in-[1.5] fade-in duration-700 delay-[600ms] fill-mode-both",
     teamBadge: "animate-in slide-in-from-bottom-24 fade-in duration-700 delay-[800ms] fill-mode-both"
+  },
+  // 11. Scrolling Card
+  {
+    photo: "animate-in slide-in-from-bottom-[100%] fade-in duration-[800ms] ease-out fill-mode-both",
+    selectedText: "animate-in slide-in-from-bottom-[100%] fade-in duration-700 delay-[200ms] ease-out fill-mode-both",
+    nameText: "animate-in slide-in-from-bottom-[100%] fade-in duration-700 delay-[300ms] ease-out fill-mode-both text-shadow-glow",
+    chestNoText: "animate-in slide-in-from-bottom-[100%] fade-in duration-700 delay-[400ms] ease-out fill-mode-both",
+    teamBadge: "animate-in slide-in-from-bottom-[100%] fade-in duration-700 delay-[500ms] ease-out fill-mode-both"
   }
 ];
