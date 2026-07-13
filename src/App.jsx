@@ -11,6 +11,7 @@ import ActivityLog from './pages/ActivityLog';
 import Settings from './pages/Settings';
 import TeamLeaderPortal from './pages/TeamLeader';
 import MainStageDisplay from './pages/MainStage';
+import ShowcaseDisplay from './pages/Showcase';
 
 function App() {
   const { state } = useEventState();
@@ -42,6 +43,7 @@ function App() {
 
         <Route path="/leader/:teamId" element={<TeamLeaderPortal />} />
         <Route path="/stage" element={<MainStageDisplay />} />
+        <Route path="/showcase" element={<ShowcaseDisplay />} />
       </Routes>
     </BrowserRouter>
   );

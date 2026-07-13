@@ -4,6 +4,8 @@ import clsx from 'clsx';
 import confetti from 'canvas-confetti';
 import { audioManager } from '../lib/audio';
 
+import { ANIMATION_VARIANTS } from '../lib/animations';
+
 const ParticleBackground = () => {
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
@@ -30,6 +32,7 @@ export default function MainStageDisplay() {
   const [animatingTeam, setAnimatingTeam] = useState(null);
   const [showFlash, setShowFlash] = useState(false);
   const [audioEnabled, setAudioEnabled] = useState(false);
+  const [activeVariant, setActiveVariant] = useState(ANIMATION_VARIANTS[0]);
   
   const prevTeamRef = useRef(null);
   const prevTimerRef = useRef(state.timerTimeRemaining);
@@ -108,6 +111,7 @@ export default function MainStageDisplay() {
     setAnimatingStudent(student);
     setAnimatingTeam(team);
     setShowFlash(true);
+    setActiveVariant(ANIMATION_VARIANTS[Math.floor(Math.random() * ANIMATION_VARIANTS.length)]);
 
     if (audioEnabled) {
       // Stop countdown if it's playing
@@ -286,27 +290,27 @@ export default function MainStageDisplay() {
               className={clsx(
                 "w-80 h-80 rounded-full object-cover border-[12px] shadow-[0_0_100px_rgba(255,255,255,0.3)] mb-8", 
                 `border-${animatingTeam?.color.replace('bg-', '')}`,
-                "animate-in zoom-in-[2] duration-[800ms] ease-out fill-mode-both"
+                activeVariant.photo
               )} 
             />
             
             <div className="text-center flex flex-col items-center">
-              <div className="text-3xl text-white uppercase tracking-[1em] mb-4 font-light animate-in slide-in-from-bottom-10 duration-700 delay-[400ms] fill-mode-both">
+              <div className={clsx("text-3xl text-white uppercase tracking-[1em] mb-4 font-light", activeVariant.selectedText)}>
                 Selected
               </div>
               
-              <h1 className="text-[6rem] font-black mb-2 tracking-wide leading-none animate-in slide-in-from-bottom-10 duration-700 delay-[500ms] fill-mode-both text-shadow-glow">
+              <h1 className={clsx("text-[6rem] font-black mb-2 tracking-wide leading-none", activeVariant.nameText)}>
                 {animatingStudent.name}
               </h1>
               
-              <div className="text-5xl font-teko text-white/70 mb-12 animate-in slide-in-from-bottom-10 duration-700 delay-[600ms] fill-mode-both">
+              <div className={clsx("text-5xl font-teko text-white/70 mb-12", activeVariant.chestNoText)}>
                 Chest No. <span className="text-event-gold font-bold">{animatingStudent.chestNo}</span>
               </div>
               
               <div className={clsx(
                 "inline-block px-16 py-4 rounded-xl text-6xl font-black uppercase tracking-widest shadow-2xl", 
                 `border-4 border-${animatingTeam?.color.replace('bg-', '')} ${animatingTeam?.text} bg-${animatingTeam?.color.replace('bg-', '')}/20`,
-                "animate-in slide-in-from-bottom-16 fade-in duration-700 delay-[800ms] fill-mode-both"
+                activeVariant.teamBadge
               )}>
                 {animatingTeam?.name}
               </div>

@@ -40,20 +40,36 @@ export default function AdminDashboard() {
         if (currentTeamIndex !== -1 && state.teams.length > 0) {
           const N = state.teams.length;
           
-          let cycleStartIndex = parseInt(localStorage.getItem('cycleStartIndex') || '0');
           let turnCount = parseInt(localStorage.getItem('turnCount') || '0');
           
           turnCount += 1;
           
           let nextTeamIndex;
-          if (turnCount >= N) {
-            // Round finished
-            cycleStartIndex = (cycleStartIndex + 1) % N;
-            nextTeamIndex = cycleStartIndex;
-            turnCount = 0;
-            localStorage.setItem('cycleStartIndex', cycleStartIndex.toString());
+          if (N === 3) {
+            const patterns = [
+              [0, 2, 1], // ACB
+              [2, 1, 0], // CBA
+              [1, 0, 2]  // BAC
+            ];
+            let roundIndex = parseInt(localStorage.getItem('cycleRoundIndex') || '0');
+            
+            if (turnCount >= 3) {
+              roundIndex = (roundIndex + 1) % 3;
+              turnCount = 0;
+              localStorage.setItem('cycleRoundIndex', roundIndex.toString());
+            }
+            nextTeamIndex = patterns[roundIndex][turnCount];
           } else {
-            nextTeamIndex = (currentTeamIndex + 1) % N;
+            let cycleStartIndex = parseInt(localStorage.getItem('cycleStartIndex') || '0');
+            if (turnCount >= N) {
+              // Round finished
+              cycleStartIndex = (cycleStartIndex + 1) % N;
+              nextTeamIndex = cycleStartIndex;
+              turnCount = 0;
+              localStorage.setItem('cycleStartIndex', cycleStartIndex.toString());
+            } else {
+              nextTeamIndex = (currentTeamIndex + 1) % N;
+            }
           }
           
           localStorage.setItem('turnCount', turnCount.toString());
@@ -245,6 +261,7 @@ export default function AdminDashboard() {
                         if (idx !== -1) {
                           localStorage.setItem('cycleStartIndex', idx.toString());
                           localStorage.setItem('turnCount', '0');
+                          localStorage.setItem('cycleRoundIndex', '0');
                         }
                         updateState({ currentTeam: team.id, accessEnabled: true, timerTimeRemaining: state.defaultTimerDuration, timerIsRunning: true });
                       }
